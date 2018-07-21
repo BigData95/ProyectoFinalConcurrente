@@ -88,24 +88,9 @@ int dequeue(struct Queue* queue)
 }
 
 // Function to get front of queue
-int front(struct Queue* queue)
-{
-    if (isEmpty(queue))
-        return INT_MIN;
-    return queue->array[queue->front];
-}
 
 
-void inicializaArreglo(int arreglo[], int tam){ //llena los arreglos con ceros
 
-	int i;
-	for(i=0; i<tam; i++){
-		arreglo[i]=0;
-		printf("%d",arreglo[i]);
-
-
-	}
-}
 
 
 
@@ -149,16 +134,16 @@ int main(int argc, char* argv[]) {
 			//printf("La hora actual es: %d:%d\n",horaActual/60,horaActual%60);
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &bandera,&status);
 			if (bandera != 0) {
+				bandera = 0;
 				MPI_Recv(&cliente, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,MPI_COMM_WORLD, &status);
 				MPI_Isend(&horaActual, 1, MPI_INT, status.MPI_SOURCE, 23,MPI_COMM_WORLD, &request);
 				//MPI_Send(&horaActual, 1, MPI_INT, status.MPI_SOURCE,23, MPI_COMM_WORLD); //Libera, manda lavrg
-				bandera = 0;
 			}
 		}
-		printf("Soy el proceso %d , la feria deberia estar cerrada \n",tid);
+		printf("/////////////////////////////////////////////////////Soy el proceso %d , la feria deberia estar cerrada////////////////////////////////////////////////////// \n",tid);
 		estadoFeria = CERRADO;
 
-		//Libera, manda lavrg Mandar la instruccion para hacer el sierre del parque.
+
 	} else if( tid == PASILLO){
 		int cliente;
 		int horaLocal = 0;
@@ -166,13 +151,14 @@ int main(int argc, char* argv[]) {
 		while(horaLocal < 1350){
 			MPI_Send(&tid, 1, MPI_INT, 0 ,23, MPI_COMM_WORLD);
 			MPI_Recv(&horaLocal, 1, MPI_INT, 0 , MPI_ANY_TAG,MPI_COMM_WORLD, &status);
+
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &bandera,&status);
 			if (bandera != 0) {
 				bandera = 0;
 				MPI_Recv(&cliente, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG,MPI_COMM_WORLD, &status);
+				usleep(1000);
+				MPI_Isend(&cliente, 1, MPI_INT, cliente, 23,MPI_COMM_WORLD, &request);
 			}
-			usleep(1000);
-			MPI_Isend(&cliente, 1, MPI_INT, cliente, 23,MPI_COMM_WORLD, &request);
 
 		}
 
@@ -181,7 +167,7 @@ int main(int argc, char* argv[]) {
 	    struct Queue* fila = createQueue(FILA_CABALLOS);
 	    struct Queue* cupo = createQueue(NUM_LUGARES_CABALLOS);
 
-		int i;
+
 		int despachado;
 		int cliente;
 		int horaLocal = 0;
@@ -223,7 +209,7 @@ int main(int argc, char* argv[]) {
 			}
 			if(horaLocal > 1300){
 			while(!isEmpty(cupo) || !isEmpty(fila)){
-							printf("ESTOY SACANDO A TODOS \n");
+							printf("ESTOY SACANDO A TODOS EN CABALLOS\n");
 							if(!isEmpty(cupo)){
 								despachado = dequeue(cupo);
 								MPI_Isend(&despachado, 1, MPI_INT,despachado  , 23 ,MPI_COMM_WORLD, &request);//LIBERA A TODOS
@@ -239,14 +225,13 @@ int main(int argc, char* argv[]) {
 					}
 			}
 		}
-			printf("soy %d fuera del while \n",CABALLOS);
+
 
 
 	}else if( tid == RUSA){
-	    struct Queue* fila = createQueue(FILA_CABALLOS);
-	    struct Queue* cupo = createQueue(NUM_LUGARES_CABALLOS);
+	    struct Queue* fila = createQueue(FILA_RUSA);
+	    struct Queue* cupo = createQueue(NUM_LUGARES_RUSA);
 
-		int i;
 		int despachado;
 		int cliente;
 		int horaLocal = 0;
@@ -282,7 +267,7 @@ int main(int argc, char* argv[]) {
 
 
 				}else if(isFull(fila)){ //Si la fila esta llena se van
-					printf("NO HAY LUGAR EN LA FILA \n");
+					printf("NO HAY LUGAR EN LA FILA DE RUSA \n");
 					MPI_Isend(&cliente, 1, MPI_INT, cliente, 23,MPI_COMM_WORLD, &request);
 				}
 			}
@@ -308,13 +293,16 @@ int main(int argc, char* argv[]) {
 
 
 	}else {
+
 		int decision;
 		int horaLocal = 0;
+
 		while(horaLocal < 1350){
 			MPI_Send(&tid, 1, MPI_INT, 0 ,23, MPI_COMM_WORLD);
 			MPI_Recv(&horaLocal, 1, MPI_INT, 0 , MPI_ANY_TAG,MPI_COMM_WORLD, &status);
-			decision=(rand()%4)+1;
-			usleep(1000);
+			decision = 0;
+			decision=(rand()%3)+1;
+			//usleep(1000);
 
 			//1 PASILLO
 			//2 MOTANA
@@ -323,33 +311,36 @@ int main(int argc, char* argv[]) {
 				printf("Soy el proceso %d ,ire a %d y la hora es %d:%d \n",tid,decision,horaLocal/60,horaLocal%60);
 
 				if(decision == CABALLOS){
-					MPI_Isend(&tid, 1, MPI_INT, CABALLOS, 23,MPI_COMM_WORLD, &request);
+					MPI_Send(&tid, 1, MPI_INT, CABALLOS ,23, MPI_COMM_WORLD);
 					MPI_Recv(&tid, 1, MPI_INT, CABALLOS , MPI_ANY_TAG,MPI_COMM_WORLD, &status);
 					printf("Soy el proceso %d y estoy fuera de caballos ME VOY COMPAS \n",tid);
 				}
 				if(decision == RUSA){
-					MPI_Isend(&tid, 1, MPI_INT, RUSA, 23,MPI_COMM_WORLD, &request);
+
+					MPI_Send(&tid, 1, MPI_INT, RUSA ,23, MPI_COMM_WORLD);
 					MPI_Recv(&tid, 1, MPI_INT, RUSA , MPI_ANY_TAG,MPI_COMM_WORLD, &status);
 					printf("Soy el proceso %d y estoy fuera de caballos ME VOY COMPAS \n",tid);
 				}
 				if(decision == PASILLO){
 
-					MPI_Isend(&tid, 1, MPI_INT, CABALLOS, 23,MPI_COMM_WORLD, &request);
-					MPI_Recv(&tid, 1, MPI_INT, CABALLOS , MPI_ANY_TAG,MPI_COMM_WORLD, &status);
+					MPI_Send(&tid, 1, MPI_INT, PASILLO ,23, MPI_COMM_WORLD);
+					MPI_Recv(&tid, 1, MPI_INT, PASILLO , MPI_ANY_TAG,MPI_COMM_WORLD, &status);
 					printf("Soy el proceso %d y estoy fuera de caballos ME VOY COMPAS \n",tid);
 				}
-				if(decision == 4){
-					printf("SOY %d Y NO QUIERO ENTRAR A NINGUN JUEGO A LA VERGA COMPA \n",tid);
-				}
+			//	if(decision == 4){
+				//}
 
 		}
+
+
+		printf("SOY %d Y NO QUIERO ENTRAR A NINGUN JUEGO COMPA \n",tid);
+
 
 
 
 	}
 
 	if(tid == CABALLOS)
-		printf("soy CABALLOS FUERA DE LA FERIA%d\n",CABALLOS);
 
 	MPI_Finalize();
 
